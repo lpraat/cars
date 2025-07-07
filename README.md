@@ -1,2 +1,2 @@
-# CARS
-*C*ont*a*ine*rs* for the C programming language
+# Cars
+**C**ont**a**ine**rs** for the C programming language
