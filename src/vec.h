@@ -1,5 +1,6 @@
-#ifndef INCLUDE_VEC_H
-#define INCLUDE_VEC_H
+#ifndef VEC_H_
+#define VEC_H_
+#include "allocator.h"
 #include "types.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,39 +20,32 @@
 #ifndef NO_VEC_DECL
 typedef struct VEC_NAME(T) VEC_NAME(T);
 struct VEC_NAME(T) {
+    Allocator* allocator;
     T* data;
     size_t capacity;
     size_t len;
 };
 #endif
 
-
-
 #ifndef NO_VEC_IMPL
-s32 METHOD_NAME(push)(VEC_NAME(T) * vec, T elem) {
+void METHOD_NAME(reserve)(VEC_NAME(T)* vec, size_t additional_capacity) {
+   vec->data = vec->allocator->realloc(vec->allocator, vec->data, (vec->capacity + additional_capacity)*sizeof(T));
+}
+
+void METHOD_NAME(push)(VEC_NAME(T)* vec, T elem) {
     if (vec->len + 1 > vec->capacity) {
         const size_t new_capacity = vec->capacity ? vec->capacity * 2 : 1;
-
-        T* const curr_data = vec->data;
-
-        // TODO: use an allocator
-        vec->data = malloc(new_capacity * sizeof(T));
+        METHOD_NAME(reserve)(vec, new_capacity - vec->capacity);
 
         if (!vec->data) {
-            return -1;
+            // TODO: panic?
+            return;
         }
-
-        if (curr_data) {
-            memcpy(vec->data, curr_data, sizeof(T) * vec->len);
-            free(curr_data);
-        }
-
         vec->capacity = new_capacity;
     }
 
     vec->data[vec->len] = elem;
     vec->len += 1;
-    return 0;
 }
 
 T METHOD_NAME(pop)(VEC_NAME(T) * vec) {
@@ -59,8 +53,24 @@ T METHOD_NAME(pop)(VEC_NAME(T) * vec) {
     return vec->data[vec->len];
 }
 
-VEC_NAME(T) METHOD_NAME(new)() {
-    VEC_NAME(T) t = {0};
+void METHOD_NAME(extend)(VEC_NAME(T)* vec, VEC_NAME(T)* other) {
+    if (vec->capacity - vec->len < other->len) {
+        METHOD_NAME(reserve)(vec, other->len - (vec->capacity - vec->len));
+        if (!vec->data) {
+            // TODO: panic?
+            return;
+        }
+    }    
+    memcpy(vec->data + vec->len*sizeof(T), other->data, other->len*sizeof(T));
+}
+
+VEC_NAME(T) METHOD_NAME(new)(Allocator* a) {
+    VEC_NAME(T) t = {
+        .allocator=a,
+        .data=0,
+        .capacity=0,
+        .len=0,
+    };
     return t;
 }
 
