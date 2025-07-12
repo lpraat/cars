@@ -1,10 +1,7 @@
 #ifndef CARS_ALLOCATOR_H_
 #define CARS_ALLOCATOR_H_
 
-#include <stdio.h>
 #include <stdlib.h>
-
-#include "types.h"
 
 typedef struct Allocator {
     void* (*alloc)(struct Allocator*, size_t);

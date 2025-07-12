@@ -1,8 +1,10 @@
 #include <stdio.h>
+#include <string.h>
 
-#include "allocator.h"
-#include "errors.h"
-#include "types.h"
+#include "cars/allocator.h"
+#include "cars/errors.h"
+#include "cars/string.h"
+#include "cars/types.h"
 
 typedef struct Node Node;
 struct Node {
@@ -10,13 +12,26 @@ struct Node {
 };
 
 #define T Node
-#include "vec.h"
+#include "cars/vec.h"
 
-#define V_LEN 10
-#define V2_LEN 112
+#define V_LEN 2
+#define V2_LEN 3
 
 int main(int argc, char* argv[argc + 1]) {
     Allocator a = c_allocator;
+
+    String s = String_from_cstr(&a, "AB");
+    String s_lower = String_ascii_uppercase(&a, &s);
+
+    printf("Before: %.*s\n", (s32)s.len, s.data);
+
+    String_push_String(&s, &s_lower);
+
+    printf("After: %.*s\n", (s32)s.len, s.data);
+
+    String_drop(&s);
+    String_drop(&s_lower);
+
     Node_Vec v = Node_Vec_new(&a);
 
     printf("%d\n", cars_errorno);

@@ -4,9 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "allocator.h"
-#include "errors.h"
-#include "types.h"
+#include "cars/allocator.h"
+#include "cars/errors.h"
+#include "cars/types.h"
 #define CONCAT_(a, b) a##b
 #define CONCAT(a, b) CONCAT_(a, b)
 #endif
@@ -20,13 +20,12 @@
 #endif
 
 #ifndef NO_VEC_DECL
-typedef struct VEC_NAME(T) VEC_NAME(T);
-struct VEC_NAME(T) {
+typedef struct VEC_NAME(T) {
     Allocator* allocator;
     T* data;
     size_t capacity;
     size_t len;
-};
+} VEC_NAME(T);
 #endif
 
 #ifndef NO_VEC_IMPL
@@ -35,6 +34,11 @@ void* METHOD_NAME(reserve)(VEC_NAME(T)* vec, size_t additional_capacity) {
         vec->allocator, vec->data,
         (vec->capacity + additional_capacity) * sizeof(T)
     );
+    if (!vec->data) {
+        cars_errorno = Cars_ENoMem;
+        return 0;
+    }
+    vec->capacity += additional_capacity;
     return vec->data;
 }
 
@@ -45,10 +49,8 @@ void METHOD_NAME(push)(VEC_NAME(T)* vec, T elem) {
             METHOD_NAME(reserve)(vec, new_capacity - vec->capacity);
 
         if (!reserved) {
-            cars_errorno = Cars_ENoMem;
             return;
         }
-        vec->capacity = new_capacity;
     }
 
     vec->data[vec->len] = elem;
@@ -65,7 +67,7 @@ void METHOD_NAME(extend)(VEC_NAME(T)* vec, VEC_NAME(T)* other) {
         void* reserved =
             METHOD_NAME(reserve)(vec, other->len - (vec->capacity - vec->len));
         if (!reserved) {
-            cars_errorno = Cars_ENoMem;
+            return;
         }
     }
     memcpy(
@@ -73,7 +75,7 @@ void METHOD_NAME(extend)(VEC_NAME(T)* vec, VEC_NAME(T)* other) {
     );
 }
 
-VEC_NAME(T) METHOD_NAME(drop)(VEC_NAME(T)* vec) {
+void METHOD_NAME(drop)(VEC_NAME(T)* vec) {
     vec->allocator->free(vec->allocator, vec->data);
 }
 
@@ -89,11 +91,7 @@ VEC_NAME(T) METHOD_NAME(new)(Allocator* a) {
 
 VEC_NAME(T) METHOD_NAME(new_with_capacity)(Allocator* a, size_t capacity) {
     VEC_NAME(T) vec = {.allocator = a};
-    void* reserved = METHOD_NAME(reserve)(&vec, capacity);
-    if (!reserved) {
-        cars_errorno = Cars_ENoMem;
-    }
-    vec.capacity = capacity;
+    METHOD_NAME(reserve)(&vec, capacity);
     return vec;
 }
 
