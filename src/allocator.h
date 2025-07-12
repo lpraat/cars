@@ -1,5 +1,5 @@
-#ifndef ALLOCATOR_H_
-#define ALLOCATOR_H_
+#ifndef CARS_ALLOCATOR_H_
+#define CARS_ALLOCATOR_H_
 
 #include <stdio.h>
 #include <stdlib.h>

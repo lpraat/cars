@@ -1,10 +1,11 @@
-#ifndef VEC_H_
-#define VEC_H_
+#ifndef CARS_VEC_H_
+#define CARS_VEC_H_
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "allocator.h"
+#include "errors.h"
 #include "types.h"
 #define CONCAT_(a, b) a##b
 #define CONCAT(a, b) CONCAT_(a, b)
@@ -29,20 +30,22 @@ struct VEC_NAME(T) {
 #endif
 
 #ifndef NO_VEC_IMPL
-void METHOD_NAME(reserve)(VEC_NAME(T)* vec, size_t additional_capacity) {
+void* METHOD_NAME(reserve)(VEC_NAME(T)* vec, size_t additional_capacity) {
     vec->data = vec->allocator->realloc(
         vec->allocator, vec->data,
         (vec->capacity + additional_capacity) * sizeof(T)
     );
+    return vec->data;
 }
 
 void METHOD_NAME(push)(VEC_NAME(T)* vec, T elem) {
     if (vec->len + 1 > vec->capacity) {
         const size_t new_capacity = vec->capacity ? vec->capacity * 2 : 1;
-        METHOD_NAME(reserve)(vec, new_capacity - vec->capacity);
+        void* reserved =
+            METHOD_NAME(reserve)(vec, new_capacity - vec->capacity);
 
-        if (!vec->data) {
-            // TODO: panic?
+        if (!reserved) {
+            cars_errorno = Cars_ENoMem;
             return;
         }
         vec->capacity = new_capacity;
@@ -59,15 +62,19 @@ T METHOD_NAME(pop)(VEC_NAME(T)* vec) {
 
 void METHOD_NAME(extend)(VEC_NAME(T)* vec, VEC_NAME(T)* other) {
     if (vec->capacity - vec->len < other->len) {
-        METHOD_NAME(reserve)(vec, other->len - (vec->capacity - vec->len));
-        if (!vec->data) {
-            // TODO: panic?
-            return;
+        void* reserved =
+            METHOD_NAME(reserve)(vec, other->len - (vec->capacity - vec->len));
+        if (!reserved) {
+            cars_errorno = Cars_ENoMem;
         }
     }
     memcpy(
         vec->data + vec->len * sizeof(T), other->data, other->len * sizeof(T)
     );
+}
+
+VEC_NAME(T) METHOD_NAME(drop)(VEC_NAME(T)* vec) {
+    vec->allocator->free(vec->allocator, vec->data);
 }
 
 VEC_NAME(T) METHOD_NAME(new)(Allocator* a) {
@@ -80,10 +87,14 @@ VEC_NAME(T) METHOD_NAME(new)(Allocator* a) {
     return t;
 }
 
-VEC_NAME(T) METHOD_NAME(new_with_capacity)(size_t capacity) {
-    VEC_NAME(T) t = {0};
-    t.capacity = capacity;
-    return t;
+VEC_NAME(T) METHOD_NAME(new_with_capacity)(Allocator* a, size_t capacity) {
+    VEC_NAME(T) vec = {.allocator = a};
+    void* reserved = METHOD_NAME(reserve)(&vec, capacity);
+    if (!reserved) {
+        cars_errorno = Cars_ENoMem;
+    }
+    vec.capacity = capacity;
+    return vec;
 }
 
 #endif

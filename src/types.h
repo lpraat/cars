@@ -1,3 +1,6 @@
+#ifndef CARS_TYPES_H_
+#define CARS_TYPES_H_
+
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -11,3 +14,5 @@ typedef int32_t s32;
 typedef int64_t s64;
 typedef float f32;
 typedef double f64;
+
+#endif
