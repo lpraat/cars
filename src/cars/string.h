@@ -10,121 +10,131 @@
 
 typedef struct String {
     Allocator* allocator;
-    u8* data;
+    u8* bytes;
     size_t capacity;
     size_t len;
 } String;
 
-String String_new(Allocator* allocator) {
+String string_new(Allocator* allocator) {
     return (String){.allocator = allocator};
 }
 
-String String_from_String(Allocator* allocator, String* s) {
+String string_from_string(Allocator* allocator, String* s) {
     String new_s = {
         .allocator = allocator,
         .capacity = s->len,
         .len = s->len,
-        .data = allocator->alloc(allocator, s->len)
+        .bytes = allocator->alloc(allocator, s->len)
     };
 
-    memcpy(new_s.data, s->data, s->len);
+    memcpy(new_s.bytes, s->bytes, s->len);
     return new_s;
 }
 
-String String_from_cstr(Allocator* allocator, char* cstr) {
+String string_from_cstr(Allocator* allocator, char* cstr) {
     size_t len = strlen(cstr);
     String s = {
         .allocator = allocator,
         .capacity = len,
         .len = len,
-        .data = allocator->alloc(allocator, len)
+        .bytes = allocator->alloc(allocator, len)
     };
 
-    memcpy(s.data, cstr, len);
+    memcpy(s.bytes, cstr, len);
     return s;
 }
 
-void* String_reserve(String* s, size_t additional_capacity) {
-    s->data = s->allocator->realloc(
-        s->allocator, s->data, (s->capacity + additional_capacity) * sizeof(u8)
+void* string_reserve(String* s, size_t additional_capacity) {
+    s->bytes = s->allocator->realloc(
+        s->allocator, s->bytes, (s->capacity + additional_capacity) * sizeof(u8)
     );
-    if (!s->data) {
+    if (!s->bytes) {
         cars_errorno = Cars_ENoMem;
         return 0;
     }
     s->capacity += additional_capacity;
-    return s->data;
+    return s->bytes;
 }
 
-void String_push_cstr(String* s, char* cstr) {
+String string_new_with_capacity(Allocator* allocator, size_t capacity) {
+    String s = {
+        .allocator = allocator,
+    };
+
+    void* reserved = string_reserve(&s, capacity);
+    if (!reserved) {
+        return s;
+    }
+    return s;
+}
+
+String string_concat(Allocator* allocator, String* s1, String* s2) {
+    String s = string_new_with_capacity(allocator, s1->len + s2->len);
+    if (!s.bytes) {
+        return s;
+    }
+    memcpy(s.bytes, s1->bytes, s1->len);
+    memcpy(s.bytes + s1->len * sizeof(u8), s2->bytes, s2->len);
+    s.len = s1->len + s2->len;
+    return s;
+}
+
+void string_push_cstr(String* s, char* cstr) {
     size_t cstr_len = strlen(cstr);
     if (s->len + cstr_len > s->capacity) {
-        void* reserved = String_reserve(s, cstr_len - (s->capacity - s->len));
+        void* reserved = string_reserve(s, cstr_len - (s->capacity - s->len));
         if (!reserved) {
             cars_errorno = Cars_ENoMem;
             return;
         }
     }
-    memcpy(s->data + s->len * sizeof(u8), cstr, cstr_len);
+    memcpy(s->bytes + s->len * sizeof(u8), cstr, cstr_len);
     s->len += cstr_len;
 }
 
-void String_push_String(String* s, String* str) {
+void string_push_string(String* s, String* str) {
     if (s->len + str->len > s->capacity) {
-        void* reserved = String_reserve(s, str->len - (s->capacity - s->len));
+        void* reserved = string_reserve(s, str->len - (s->capacity - s->len));
         if (!reserved) {
             cars_errorno = Cars_ENoMem;
             return;
         }
     }
-    memcpy(s->data + s->len * sizeof(u8), str->data, str->len);
+    memcpy(s->bytes + s->len * sizeof(u8), str->bytes, str->len);
     s->len += str->len;
 }
 
-String String_ascii_lowercase(Allocator* a, String* s) {
-    String s_lowercase = {
-        .allocator = a,
-    };
-    void* reserved = String_reserve(&s_lowercase, s->len);
-    if (!reserved) {
-        return s_lowercase;
-    }
-
+String string_ascii_lowercase(Allocator* allocator, String* s) {
+    String s_lowercase = string_new_with_capacity(allocator, s->len);
     for (size_t i = 0; i < s->len; i++) {
-        if (s->data[i] >= 'A' && s->data[i] <= 'Z') {
-            s_lowercase.data[i] = s->data[i] - ('A' - 'a');
+        if (s->bytes[i] >= 'A' && s->bytes[i] <= 'Z') {
+            s_lowercase.bytes[i] = s->bytes[i] - ('A' - 'a');
         } else {
-            s_lowercase.data[i] = s->data[i];
+            s_lowercase.bytes[i] = s->bytes[i];
         }
     }
     s_lowercase.len = s->len;
     return s_lowercase;
 }
 
-String String_ascii_uppercase(Allocator* a, String* s) {
-    String s_uppercase = {
-        .allocator = a,
-    };
-    void* reserved = String_reserve(&s_uppercase, s->len);
-    if (!reserved) {
-        return s_uppercase;
-    }
+String string_ascii_uppercase(Allocator* allocator, String* s) {
+    String s_uppercase = string_new_with_capacity(allocator, s->len);
 
     for (size_t i = 0; i < s->len; i++) {
-        if (s->data[i] >= 'a' && s->data[i] <= 'z') {
-            s_uppercase.data[i] = s->data[i] + ('A' - 'a');
+        if (s->bytes[i] >= 'a' && s->bytes[i] <= 'z') {
+            s_uppercase.bytes[i] = s->bytes[i] + ('A' - 'a');
         } else {
-            s_uppercase.data[i] = s->data[i];
+            s_uppercase.bytes[i] = s->bytes[i];
         }
     }
     s_uppercase.len = s->len;
     return s_uppercase;
 }
 
-void String_drop(String* s) { s->allocator->free(s->allocator, s->data); }
+void string_drop(String* s) { s->allocator->free(s->allocator, s->bytes); }
 
-void String_print(String* s) {
-    fwrite(s->data, sizeof(u8), s->len, stdout);
+void string_print(String* s) {
+    fwrite(s->bytes, sizeof(u8), s->len, stdout);
     fflush(stdout);
 }
 

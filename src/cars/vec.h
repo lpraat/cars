@@ -16,7 +16,7 @@
 #define METHOD_NAME(name) CONCAT(CONCAT(T_VEC_NAME, _), name)
 #else
 #define VEC_NAME(T) CONCAT(CONCAT(T, _), Vec)
-#define METHOD_NAME(name) CONCAT(VEC_NAME(T), CONCAT(_, name))
+#define METHOD_NAME(name) CONCAT(CONCAT(CONCAT(T, _), vec), CONCAT(_, name))
 #endif
 
 #ifndef NO_VEC_DECL

@@ -20,39 +20,44 @@ struct Node {
 int main(int argc, char* argv[argc + 1]) {
     Allocator a = c_allocator;
 
-    String s = String_from_cstr(&a, "AB");
-    String s_lower = String_ascii_uppercase(&a, &s);
+    String s = string_from_cstr(&a, "AB");
+    String s_lower = string_ascii_uppercase(&a, &s);
 
-    printf("Before: %.*s\n", (s32)s.len, s.data);
+    printf("Before: %.*s\n", (s32)s.len, s.bytes);
 
-    String_push_String(&s, &s_lower);
+    string_push_string(&s, &s_lower);
 
-    printf("After: %.*s\n", (s32)s.len, s.data);
+    printf("After: %.*s\n", (s32)s.len, s.bytes);
 
-    String_drop(&s);
-    String_drop(&s_lower);
+    String out = string_concat(&a, &s, &s_lower);
+    printf("%zu %zu", out.len, out.capacity);
+    printf("Out: %.*s\n", (s32)out.len, out.bytes);
 
-    Node_Vec v = Node_Vec_new(&a);
+    string_drop(&s);
+    string_drop(&s_lower);
+    string_drop(&out);
+
+    Node_Vec v = Node_vec_new(&a);
 
     printf("%d\n", cars_errorno);
 
     for (size_t i = 0; i < V_LEN; i++) {
-        Node_Vec_push(&v, (Node){.x = i});
+        Node_vec_push(&v, (Node){.x = i});
     }
 
-    Node_Vec v2 = Node_Vec_new(&a);
+    Node_Vec v2 = Node_vec_new(&a);
     for (size_t i = 0; i < V2_LEN; i++) {
-        Node_Vec_push(&v, (Node){.x = 10 * i});
+        Node_vec_push(&v, (Node){.x = 10 * i});
     }
 
-    Node_Vec_extend(&v, &v2);
+    Node_vec_extend(&v, &v2);
 
     for (size_t i = 0; i < V_LEN + V2_LEN; i++) {
         printf("El: %d\n", v.data[i].x);
     }
 
-    Node_Vec_drop(&v);
-    Node_Vec_drop(&v2);
+    Node_vec_drop(&v);
+    Node_vec_drop(&v2);
 
     return 0;
 }
