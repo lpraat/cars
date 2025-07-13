@@ -1,5 +1,6 @@
 #ifndef CARS_VEC_H_
 #define CARS_VEC_H_
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,6 +8,7 @@
 #include "cars/allocator.h"
 #include "cars/errors.h"
 #include "cars/types.h"
+
 #define CONCAT_(a, b) a##b
 #define CONCAT(a, b) CONCAT_(a, b)
 #endif
@@ -35,8 +37,7 @@ void* METHOD_NAME(reserve)(VEC_NAME(T)* vec, size_t additional_capacity) {
         (vec->capacity + additional_capacity) * sizeof(T)
     );
     if (!vec->data) {
-        cars_errorno = Cars_ENoMem;
-        return 0;
+        MEMERR();
     }
     vec->capacity += additional_capacity;
     return vec->data;
@@ -45,12 +46,7 @@ void* METHOD_NAME(reserve)(VEC_NAME(T)* vec, size_t additional_capacity) {
 void METHOD_NAME(push)(VEC_NAME(T)* vec, T elem) {
     if (vec->len + 1 > vec->capacity) {
         const size_t new_capacity = vec->capacity ? vec->capacity * 2 : 1;
-        void* reserved =
-            METHOD_NAME(reserve)(vec, new_capacity - vec->capacity);
-
-        if (!reserved) {
-            return;
-        }
+        METHOD_NAME(reserve)(vec, new_capacity - vec->capacity);
     }
 
     vec->data[vec->len] = elem;
@@ -62,13 +58,9 @@ T METHOD_NAME(pop)(VEC_NAME(T)* vec) {
     return vec->data[vec->len];
 }
 
-void METHOD_NAME(extend)(VEC_NAME(T)* vec, VEC_NAME(T)* other) {
+void METHOD_NAME(extend)(VEC_NAME(T)* vec, VEC_NAME(T) const* other) {
     if (vec->capacity - vec->len < other->len) {
-        void* reserved =
-            METHOD_NAME(reserve)(vec, other->len - (vec->capacity - vec->len));
-        if (!reserved) {
-            return;
-        }
+        METHOD_NAME(reserve)(vec, other->len - (vec->capacity - vec->len));
     }
     memcpy(
         vec->data + vec->len * sizeof(T), other->data, other->len * sizeof(T)
