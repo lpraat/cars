@@ -15,7 +15,10 @@ static Cars_Error cars_errorno = Cars_Success;
 
 void memerr(char const* file_name, s32 lineno) {
     cars_errorno = Cars_MemErr;
-    fprintf(stderr, "Memory error (file: %s, line: %d).", file_name, lineno);
+    fprintf(
+        stderr, "Memory allocation error (file: %s, line: %d).", file_name,
+        lineno
+    );
     exit(1);
 }
 

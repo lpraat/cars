@@ -19,31 +19,6 @@ String string_new(Allocator* allocator) {
     return (String){.allocator = allocator};
 }
 
-String string_from_string(Allocator* allocator, String const* s) {
-    String new_s = {
-        .allocator = allocator,
-        .capacity = s->len,
-        .len = s->len,
-        .bytes = allocator->alloc(allocator, s->len)
-    };
-
-    memcpy(new_s.bytes, s->bytes, s->len);
-    return new_s;
-}
-
-String string_from_cstr(Allocator* allocator, char const* cstr) {
-    size_t len = strlen(cstr);
-    String s = {
-        .allocator = allocator,
-        .capacity = len,
-        .len = len,
-        .bytes = allocator->alloc(allocator, len)
-    };
-
-    memcpy(s.bytes, cstr, len);
-    return s;
-}
-
 void* string_reserve(String* s, size_t additional_capacity) {
     s->bytes = s->allocator->realloc(
         s->allocator, s->bytes, (s->capacity + additional_capacity) * sizeof(u8)
@@ -61,6 +36,21 @@ String string_new_with_capacity(Allocator* allocator, size_t capacity) {
     };
 
     string_reserve(&s, capacity);
+    return s;
+}
+
+String string_from_string(Allocator* allocator, String const* s) {
+    String new_s = string_new_with_capacity(allocator, s->len);
+    new_s.len = s->len;
+    memcpy(new_s.bytes, s->bytes, s->len);
+    return new_s;
+}
+
+String string_from_cstr(Allocator* allocator, char const* cstr) {
+    size_t len = strlen(cstr);
+    String s = string_new_with_capacity(allocator, len);
+    s.len = len;
+    memcpy(s.bytes, cstr, len);
     return s;
 }
 
