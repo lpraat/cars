@@ -24,8 +24,8 @@ int main(int argc, char* argv[argc + 1]) {
 
     InnerArena inner = arena_allocator_new_inner(&a);
 
-    String s = string_from_cstr(&inner.arena->base, "AB");
-    String s_lower = string_ascii_uppercase(&inner.arena->base, &s);
+    String s = string_from_cstr((Allocator*)inner.arena, "AB");
+    String s_lower = string_ascii_uppercase((Allocator*)inner.arena, &s);
 
     printf("Before: %.*s\n", (s32)s.len, s.bytes);
 
@@ -33,7 +33,7 @@ int main(int argc, char* argv[argc + 1]) {
 
     printf("After: %.*s\n", (s32)s.len, s.bytes);
 
-    String out = string_concat(&inner.arena->base, &s, &s_lower);
+    String out = string_concat((Allocator*)inner.arena, &s, &s_lower);
     printf("%zu %zu", out.len, out.capacity);
     printf("Out: %.*s\n", (s32)out.len, out.bytes);
 
@@ -42,7 +42,7 @@ int main(int argc, char* argv[argc + 1]) {
     string_drop(&out);
     arena_allocator_drop_inner(&a, &inner);
 
-    Node_Vec v = Node_vec_new(&a.base);
+    Node_Vec v = Node_vec_new((Allocator*)&a);
 
     printf("%d\n", cars_errorno);
 
@@ -54,7 +54,7 @@ int main(int argc, char* argv[argc + 1]) {
         printf("el: %d\n", v.data[i].x);
     }
 
-    Node_Vec v2 = Node_vec_new(&a.base);
+    Node_Vec v2 = Node_vec_new((Allocator*)&a);
     for (size_t i = 0; i < V2_LEN; i++) {
         Node_vec_push(&v, (Node){.x = 10 * i});
     }

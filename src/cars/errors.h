@@ -1,5 +1,5 @@
-#ifndef CARS_ERRORS_H_
-#define CARS_ERRORS_H_
+#ifndef CARS_ERRORS_H
+#define CARS_ERRORS_H
 
 #include <stdio.h>
 #include <stdlib.h>

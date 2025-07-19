@@ -1,5 +1,5 @@
-#ifndef CARS_TYPES_H_
-#define CARS_TYPES_H_
+#ifndef CARS_TYPES_H
+#define CARS_TYPES_H
 
 #include <stdbool.h>
 #include <stdint.h>

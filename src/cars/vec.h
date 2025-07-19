@@ -1,7 +1,6 @@
-#ifndef CARS_VEC_H_
-#define CARS_VEC_H_
+#ifndef CARS_VEC_H
+#define CARS_VEC_H
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 

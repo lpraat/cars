@@ -1,5 +1,5 @@
-#ifndef CARS_ARENA_H_
-#define CARS_ARENA_H_
+#ifndef CARS_ARENA_H
+#define CARS_ARENA_H
 
 #include <stdalign.h>
 #include <stddef.h>
@@ -40,6 +40,7 @@ static void* arena_allocator_alloc(Allocator* self, size_t size) {
         return (void*)ptr;
     }
 
+    // not enough space for `size` bytes
     return 0;
 }
 

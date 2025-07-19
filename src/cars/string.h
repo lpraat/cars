@@ -1,5 +1,5 @@
-#ifndef CARS_STRING_H_
-#define CARS_STRING_H_
+#ifndef CARS_STRING_H
+#define CARS_STRING_H
 
 #include <stdio.h>
 #include <string.h>
