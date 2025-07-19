@@ -1,6 +1,10 @@
 # Macos
 .DS_Store
 
+# Editors
+.zed
+.vscode
+
 # Build
 build
 compile_commands.json
