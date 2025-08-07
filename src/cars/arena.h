@@ -18,7 +18,7 @@ typedef struct ArenaAllocator {
     size_t prev_offset;
 } ArenaAllocator;
 
-static uintptr_t next_aligned_ptr(ArenaAllocator* self, size_t align) {
+static inline uintptr_t next_aligned_ptr(ArenaAllocator* self, size_t align) {
     uintptr_t ptr = (uintptr_t)self->base_ptr + self->offset;
 
     uintptr_t modulo = ptr % align;
@@ -82,13 +82,14 @@ static void arena_allocator_free(Allocator* self, void* ptr) {
     /* Do nothing */
 }
 
+static AllocatorVTable arena_allocator_vtable = {
+    .alloc = arena_allocator_alloc,
+    .realloc = arena_allocator_realloc,
+    .free = arena_allocator_free,
+};
+
 ArenaAllocator arena_allocator_new(size_t arena_size) {
-    return (ArenaAllocator){.base =
-                                {
-                                    .alloc = arena_allocator_alloc,
-                                    .realloc = arena_allocator_realloc,
-                                    .free = arena_allocator_free,
-                                },
+    return (ArenaAllocator){.base = {.vtable = &arena_allocator_vtable},
                             .size = arena_size,
                             .base_ptr = malloc(arena_size)};
 }

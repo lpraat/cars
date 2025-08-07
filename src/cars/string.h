@@ -20,7 +20,7 @@ String string_new(Allocator* allocator) {
 }
 
 void* string_reserve(String* s, size_t additional_capacity) {
-    s->bytes = s->allocator->realloc(
+    s->bytes = s->allocator->vtable->realloc(
         s->allocator, s->bytes, (s->capacity + additional_capacity) * sizeof(u8)
     );
     if (!s->bytes) {
@@ -105,7 +105,9 @@ String string_ascii_uppercase(Allocator* allocator, String const* s) {
     return s_uppercase;
 }
 
-void string_drop(String* s) { s->allocator->free(s->allocator, s->bytes); }
+void string_drop(String* s) {
+    s->allocator->vtable->free(s->allocator, s->bytes);
+}
 
 void string_print(String const* s) {
     fwrite(s->bytes, sizeof(u8), s->len, stdout);

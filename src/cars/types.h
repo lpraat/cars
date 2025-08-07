@@ -2,6 +2,7 @@
 #define CARS_TYPES_H
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 typedef uint8_t u8;
@@ -14,5 +15,8 @@ typedef int32_t s32;
 typedef int64_t s64;
 typedef float f32;
 typedef double f64;
+typedef size_t size_t;
+typedef uintptr_t uintptr_t;
+typedef intptr_t intptr_t;
 
 #endif

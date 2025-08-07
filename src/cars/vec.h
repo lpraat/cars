@@ -14,10 +14,10 @@
 
 #if defined(T_VEC_NAME)
 #define VEC_NAME(T) T_VEC_NAME
-#define METHOD_NAME(name) CONCAT(CONCAT(T_VEC_NAME, _), name)
+#define VEC_METHOD(name) CONCAT(CONCAT(T_VEC_NAME, _), name)
 #else
-#define VEC_NAME(T) CONCAT(CONCAT(T, _), Vec)
-#define METHOD_NAME(name) CONCAT(CONCAT(CONCAT(T, _), vec), CONCAT(_, name))
+#define VEC_NAME(T) CONCAT(T, _Vec)
+#define VEC_METHOD(name) CONCAT(CONCAT(T, _vec_), name)
 #endif
 
 #ifndef NO_VEC_DECL
@@ -30,8 +30,8 @@ typedef struct VEC_NAME(T) {
 #endif
 
 #ifndef NO_VEC_IMPL
-void* METHOD_NAME(reserve)(VEC_NAME(T)* vec, size_t additional_capacity) {
-    vec->data = vec->allocator->realloc(
+void* VEC_METHOD(reserve)(VEC_NAME(T)* vec, size_t additional_capacity) {
+    vec->data = vec->allocator->vtable->realloc(
         vec->allocator, vec->data,
         (vec->capacity + additional_capacity) * sizeof(T)
     );
@@ -42,35 +42,35 @@ void* METHOD_NAME(reserve)(VEC_NAME(T)* vec, size_t additional_capacity) {
     return vec->data;
 }
 
-void METHOD_NAME(push)(VEC_NAME(T)* vec, T elem) {
+void VEC_METHOD(push)(VEC_NAME(T)* vec, T elem) {
     if (vec->len + 1 > vec->capacity) {
         const size_t new_capacity = vec->capacity ? vec->capacity * 2 : 1;
-        METHOD_NAME(reserve)(vec, new_capacity - vec->capacity);
+        VEC_METHOD(reserve)(vec, new_capacity - vec->capacity);
     }
 
     vec->data[vec->len] = elem;
     vec->len += 1;
 }
 
-T METHOD_NAME(pop)(VEC_NAME(T)* vec) {
+T VEC_METHOD(pop)(VEC_NAME(T)* vec) {
     vec->len--;
     return vec->data[vec->len];
 }
 
-void METHOD_NAME(extend)(VEC_NAME(T)* vec, VEC_NAME(T) const* other) {
+void VEC_METHOD(extend)(VEC_NAME(T)* vec, VEC_NAME(T) const* other) {
     if (vec->capacity - vec->len < other->len) {
-        METHOD_NAME(reserve)(vec, other->len - (vec->capacity - vec->len));
+        VEC_METHOD(reserve)(vec, other->len - (vec->capacity - vec->len));
     }
     memcpy(
         vec->data + vec->len * sizeof(T), other->data, other->len * sizeof(T)
     );
 }
 
-void METHOD_NAME(drop)(VEC_NAME(T)* vec) {
-    vec->allocator->free(vec->allocator, vec->data);
+void VEC_METHOD(drop)(VEC_NAME(T)* vec) {
+    vec->allocator->vtable->free(vec->allocator, vec->data);
 }
 
-VEC_NAME(T) METHOD_NAME(new)(Allocator* a) {
+VEC_NAME(T) VEC_METHOD(new)(Allocator* a) {
     VEC_NAME(T) t = {
         .allocator = a,
         .data = 0,
@@ -80,16 +80,18 @@ VEC_NAME(T) METHOD_NAME(new)(Allocator* a) {
     return t;
 }
 
-VEC_NAME(T) METHOD_NAME(new_with_capacity)(Allocator* a, size_t capacity) {
+VEC_NAME(T) VEC_METHOD(new_with_capacity)(Allocator* a, size_t capacity) {
     VEC_NAME(T) vec = {.allocator = a};
-    METHOD_NAME(reserve)(&vec, capacity);
+    VEC_METHOD(reserve)(&vec, capacity);
     return vec;
 }
 
 #endif
 
-#undef VEC_NAME
-#undef METHOD_NAME
-#undef VEC_IMPLEMENTATION
+#undef VEC_NAME_T
 #undef NO_VEC_DECL
 #undef NO_VEC_IMPL
+#undef T
+
+#undef VEC_NAME
+#undef VEC_METHOD

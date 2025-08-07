@@ -5,11 +5,19 @@
 
 #include "cars/utils.h"
 
-typedef struct Allocator {
-    void* (*alloc)(struct Allocator*, size_t);
-    void* (*realloc)(struct Allocator*, void*, size_t);
-    void (*free)(struct Allocator*, void*);
-} Allocator;
+typedef struct Allocator Allocator;
+
+typedef struct AllocatorVTable {
+    void* (*alloc)(Allocator*, size_t);
+    void* (*realloc)(Allocator*, void*, size_t);
+    void (*free)(Allocator*, void*);
+} AllocatorVTable;
+
+struct Allocator {
+    AllocatorVTable const* vtable;
+};
+
+static AllocatorVTable allocator_vtable = {0};
 
 typedef struct CAllocator {
     Allocator base;
@@ -30,12 +38,12 @@ static void c_allocator_free(Allocator* self, void* ptr) {
     free(ptr);
 }
 
-static const CAllocator c_allocator = {
-    .base = {
-        .alloc = c_allocator_alloc,
-        .realloc = c_allocator_realloc,
-        .free = c_allocator_free,
-    }
+static AllocatorVTable callocator_vtable = {
+    .alloc = c_allocator_alloc,
+    .realloc = c_allocator_realloc,
+    .free = c_allocator_free,
 };
+
+static const CAllocator c_allocator = {.base = {.vtable = &callocator_vtable}};
 
 #endif
