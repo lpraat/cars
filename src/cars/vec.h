@@ -5,8 +5,8 @@
 #include <string.h>
 
 #include "cars/allocator.h"
-#include "cars/errors.h"
 #include "cars/types.h"
+#include "cars/utils.h"
 
 #define CONCAT_(a, b) a##b
 #define CONCAT(a, b) CONCAT_(a, b)
@@ -28,6 +28,8 @@ typedef struct VEC_NAME(T) {
     size_t len;
 } VEC_NAME(T);
 #endif
+
+/* TODO: sort method */
 
 #ifndef NO_VEC_IMPL
 void* VEC_METHOD(reserve)(VEC_NAME(T)* vec, size_t additional_capacity) {

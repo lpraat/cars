@@ -5,8 +5,8 @@
 #include <string.h>
 
 #include "cars/allocator.h"
-#include "cars/errors.h"
 #include "cars/types.h"
+#include "cars/utils.h"
 
 typedef struct String {
     Allocator* allocator;
@@ -28,6 +28,10 @@ void* string_reserve(String* s, size_t additional_capacity) {
     }
     s->capacity += additional_capacity;
     return s->bytes;
+}
+
+bool string_are_equal(String* s1, String* s2) {
+    return s1->len == s2->len && !memcmp(s1->bytes, s2->bytes, s1->len);
 }
 
 String string_new_with_capacity(Allocator* allocator, size_t capacity) {

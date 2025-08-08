@@ -1,16 +1,16 @@
 #ifndef CARS_HASHMAP_H
 #define CARS_HASHMAP_H
 
-/* HashMap implemented with linear probing */
+/* HashMap implementation with linear probing */
 
 #include <assert.h>
 #include <string.h>
 
 #include "cars/allocator.h"
-#include "cars/errors.h"
 #include "cars/hash.h"
+#include "cars/utils.h"
 
-#define INITIAL_SIZE 16
+#define INITIAL_N_SLOTS 16
 #define LOAD_FACTOR 0.75
 
 typedef enum HashMapSlotState {
@@ -52,7 +52,23 @@ typedef struct HASHMAP_NAME(K, V) {
 
 #ifndef NO_HASHMAP_IMPL
 
-HASHMAP_NAME(K, V) HASHMAP_METHOD(new)(Allocator* allocator, HashContext* hash_ctx) {
+static void HASHMAP_METHOD(initialize)(
+    HASHMAP_NAME(K, V)* hashmap, size_t n_slots
+) {
+    assert(hashmap->n_full == 0 && hashmap->n_slots == 0);
+    hashmap->slots = hashmap->allocator->vtable->alloc(
+        hashmap->allocator, n_slots * sizeof(HASHMAP_SLOT(K, V))
+    );
+    memset(hashmap->slots, 0, n_slots * sizeof(HASHMAP_SLOT(K, V)));
+    if (!hashmap->slots) {
+        MEMERR();
+    }
+    hashmap->n_slots = n_slots;
+}
+
+HASHMAP_NAME(K, V) HASHMAP_METHOD(new)(
+    Allocator* allocator, HashContext* hash_ctx
+) {
     return (HASHMAP_NAME(K, V)){.allocator = allocator,
                                 .slots = 0,
                                 .hash_ctx = hash_ctx,
@@ -60,19 +76,21 @@ HASHMAP_NAME(K, V) HASHMAP_METHOD(new)(Allocator* allocator, HashContext* hash_c
                                 .n_full = 0};
 }
 
-static void HASHMAP_METHOD(initialize)(HASHMAP_NAME(K, V) * hashmap) {
-    assert(hashmap->n_full == 0 && hashmap->n_slots == 0);
-    hashmap->slots = hashmap->allocator->vtable->alloc(
-        hashmap->allocator, INITIAL_SIZE * sizeof(HASHMAP_SLOT(K, V))
-    );
-    memset(hashmap->slots, 0, INITIAL_SIZE * sizeof(HASHMAP_SLOT(K, V)));
-    if (!hashmap->slots) {
-        MEMERR();
-    }
-    hashmap->n_slots = INITIAL_SIZE;
+HASHMAP_NAME(K, V) HASHMAP_METHOD(new_with_n_slots)(
+    Allocator* allocator, HashContext* hash_ctx, size_t n_slots
+) {
+    HASHMAP_NAME(K, V) map = {
+        .allocator = allocator,
+        .slots = 0,
+        .hash_ctx = hash_ctx,
+        .n_slots = 0,
+        .n_full = 0
+    };
+    HASHMAP_METHOD(initialize)(&map, n_slots);
+    return map;
 }
 
-V* HASHMAP_METHOD(get)(HASHMAP_NAME(K, V) * hashmap, K* key) {
+V* HASHMAP_METHOD(get)(HASHMAP_NAME(K, V)* hashmap, K* key) {
     size_t hash = hashmap->hash_ctx->vtable->hash_bytes(
         hashmap->hash_ctx, key, sizeof(*key)
     );
@@ -93,9 +111,13 @@ V* HASHMAP_METHOD(get)(HASHMAP_NAME(K, V) * hashmap, K* key) {
     return 0;
 }
 
-void HASHMAP_METHOD(remove)(HASHMAP_NAME(K, V) * hashmap, K* key) {
+bool HASHMAP_METHOD(contains_key)(HASHMAP_NAME(K, V)* hashmap, K* key) {
+    return HASHMAP_METHOD(get)(hashmap, key);
+}
+
+void HASHMAP_METHOD(remove)(HASHMAP_NAME(K, V)* hashmap, K* key) {
     size_t hash = hashmap->hash_ctx->vtable->hash_bytes(
-        hashmap->hash_ctx, &key, sizeof(*key)
+        hashmap->hash_ctx, key, sizeof(*key)
     );
     size_t start_probe = hash % hashmap->n_slots;
     for (size_t i = 0; i < hashmap->n_slots; i++) {
@@ -112,9 +134,9 @@ void HASHMAP_METHOD(remove)(HASHMAP_NAME(K, V) * hashmap, K* key) {
     }
 }
 
-void HASHMAP_METHOD(insert)(HASHMAP_NAME(K, V) * hashmap, K key, V value) {
+void HASHMAP_METHOD(insert)(HASHMAP_NAME(K, V)* hashmap, K key, V value) {
     if (hashmap->n_slots == 0) {
-        HASHMAP_METHOD(initialize)(hashmap);
+        HASHMAP_METHOD(initialize)(hashmap, INITIAL_N_SLOTS);
     }
 
     if ((f64)hashmap->n_full / hashmap->n_slots >= LOAD_FACTOR) {
@@ -131,9 +153,9 @@ void HASHMAP_METHOD(insert)(HASHMAP_NAME(K, V) * hashmap, K key, V value) {
         size_t n_full = 0;
         for (size_t i = 0; i < hashmap->n_slots; i++) {
             if (hashmap->slots[i].state == HashMapSlotState_Full) {
-                K key_to_rehash = hashmap->slots[i].key;
+                K* key_to_rehash = &hashmap->slots[i].key;
                 size_t hash = hashmap->hash_ctx->vtable->hash_bytes(
-                    hashmap->hash_ctx, &key_to_rehash, sizeof(key_to_rehash)
+                    hashmap->hash_ctx, key_to_rehash, sizeof(*key_to_rehash)
                 );
                 size_t start_probe = hash % new_n_slots;
                 for (size_t j = 0; j < new_n_slots; j++) {
@@ -189,7 +211,7 @@ void HASHMAP_METHOD(insert)(HASHMAP_NAME(K, V) * hashmap, K key, V value) {
     hashmap->n_full += 1;
 }
 
-void HASHMAP_METHOD(drop)(HASHMAP_NAME(K, V) * hashmap) {
+void HASHMAP_METHOD(drop)(HASHMAP_NAME(K, V)* hashmap) {
     hashmap->allocator->vtable->free(hashmap->allocator, hashmap->slots);
 }
 

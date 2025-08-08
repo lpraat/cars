@@ -4,12 +4,15 @@
 #include <_stdlib.h>
 #include <string.h>
 
+#include "cars/string.h"
 #include "cars/types.h"
 #include "cars/utils.h"
 
 /*
- * Hash functions taken from:
+ * Hash function implementations taken from:
+ * -
  * https://github.com/gcc-mirror/gcc/blob/master/libstdc++-v3/libsupc++/hash_bytes.cc
+ * - http://www.cse.yorku.ca/~oz/hash.html
  */
 static inline size_t unaligned_load(const char* p) {
     size_t result;
@@ -99,7 +102,6 @@ size_t hash_bytes(const void* ptr, size_t len, size_t seed) {
 
 #else
 
-/* http://www.cse.yorku.ca/~oz/hash.html */
 size_t hash_bytes(const void* ptr, size_t len) {
     size_t hash = 5381;
 
@@ -114,17 +116,33 @@ size_t hash_bytes(const void* ptr, size_t len) {
 typedef struct HashContext HashContext;
 
 typedef struct HashContextVTable {
-    size_t (*hash_bytes)(HashContext*, void const*, size_t len);
-    bool (*are_equal)(HashContext*, void const*, void const*, size_t);
+    /*
+     * Hash `size` bytes at `ptr`. Input param `size` is `sizeof(*ptr)`.
+     */
+    size_t (*hash_bytes)(HashContext*, void const* ptr, size_t size);
+
+    /*
+     * Compare `size` bytes at p1 and p2 for equality. Input param `size` is
+     * `sizeof(*p1)`.
+     */
+    bool (*are_equal)(
+        HashContext*, void const* p1, void const* p2, size_t size
+    );
 } HashContextVTable;
 
+/* Base structure for all hash context types. */
 struct HashContext {
     HashContextVTable const* vtable;
 };
 
 static HashContextVTable hash_ctx_vtable = {0};
 
-/* Default hash context */
+/*
+ * Default hash context. Useful for completely defined types (e.g., numeric
+ * types).
+ *
+ * Use `default_hash_ctx_new` to create a new context of this type
+ */
 typedef struct DefaultHashContext {
     HashContext base;
     size_t seed;
@@ -152,6 +170,43 @@ static HashContextVTable default_hash_ctx_vtable = {
 DefaultHashContext default_hash_ctx_new() {
     return (DefaultHashContext){.base = {.vtable = &default_hash_ctx_vtable},
                                 .seed = arc4random()};
+}
+
+/*
+ * Hash context for the String type defined in `cars/string.h`
+ *
+ * Use `string_hash_ctx_new` to create a new context of this type
+ */
+typedef struct StringHashContext {
+    HashContext base;
+    size_t seed;
+} StringHashContext;
+
+static size_t string_hash_ctx_hash_bytes(
+    HashContext* self, void const* ptr, size_t len
+) {
+    UNUSED(len);
+    StringHashContext* string_ctx = (StringHashContext*)self;
+    String* s = (String*)ptr;
+    return hash_bytes(s->bytes, s->len, string_ctx->seed);
+}
+
+static bool string_hash_ctx_are_equal(
+    HashContext* self, void const* p1, void const* p2, size_t size
+) {
+    UNUSED(self);
+    UNUSED(size);
+    return string_are_equal((String*)p1, (String*)p2);
+}
+
+static HashContextVTable string_hash_ctx_vtable = {
+    .hash_bytes = string_hash_ctx_hash_bytes,
+    .are_equal = string_hash_ctx_are_equal
+};
+
+StringHashContext string_hash_ctx_new() {
+    return (StringHashContext){.base = {.vtable = &string_hash_ctx_vtable},
+                               .seed = arc4random()};
 }
 
 #endif

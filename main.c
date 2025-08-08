@@ -4,9 +4,10 @@
 
 #include "cars/allocator.h"
 #include "cars/arena.h"
-#include "cars/errors.h"
+#include "cars/hash.h"
 #include "cars/string.h"
 #include "cars/types.h"
+#include "cars/utils.h"
 
 typedef struct Node Node;
 struct Node {
@@ -19,8 +20,53 @@ struct Node {
 #define V_LEN 10
 #define V2_LEN 30
 
+#define K String
+#define V s32
+#include "cars/hashmap.h"
+
 int main(int argc, char* argv[argc + 1]) {
-    ArenaAllocator a = arena_allocator_new(1e9);
+    ArenaAllocator a = arena_allocator_new(1e12);
+
+    StringHashContext string_hash_ctx = string_hash_ctx_new();
+
+    String_s32_HashMap map = String_s32_hashmap_new_with_n_slots(
+        (Allocator*)&a, (HashContext*)&string_hash_ctx, 100
+    );
+
+    char key[3];
+    for (size_t i = 0; i < 100; i++) {
+        snprintf(key, 3, "%zu", i);
+        String_s32_hashmap_insert(
+            &map, string_from_cstr((Allocator*)&a, key), i
+        );
+    }
+
+    for (size_t i = 0; i < 100; i++) {
+        snprintf(key, 3, "%zu", i);
+        String skey = string_from_cstr((Allocator*)&a, key);
+        bool has_key = String_s32_hashmap_contains_key(&map, &skey);
+        printf("Map has key: %zu? %d\n", i, has_key);
+    }
+
+    for (size_t i = 0; i < 100; i++) {
+        if (i % 2 == 0) {
+            snprintf(key, 3, "%zu", i);
+            String skey = string_from_cstr((Allocator*)&a, key);
+            String_s32_hashmap_remove(&map, &skey);
+        }
+    }
+
+    for (size_t i = 0; i < 100; i++) {
+        snprintf(key, 3, "%zu", i);
+        String skey = string_from_cstr((Allocator*)&a, key);
+        s32* elem = String_s32_hashmap_get(&map, &skey);
+        if (!elem) {
+            printf("Value not found for key: %zu\n", i);
+        } else {
+            printf("Value for key: %zu is: %d\n", i, *elem);
+        }
+    }
+    String_s32_hashmap_drop(&map);
 
     InnerArena inner = arena_allocator_new_inner(&a);
 
@@ -43,8 +89,6 @@ int main(int argc, char* argv[argc + 1]) {
     arena_allocator_drop_inner(&a, &inner);
 
     Node_Vec v = Node_vec_new((Allocator*)&a);
-
-    printf("%d\n", cars_errorno);
 
     for (size_t i = 0; i < V_LEN; i++) {
         Node_vec_push(&v, (Node){.x = i});
