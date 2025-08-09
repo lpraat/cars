@@ -10,9 +10,8 @@
 
 /*
  * Hash function implementations taken from:
- * -
- * https://github.com/gcc-mirror/gcc/blob/master/libstdc++-v3/libsupc++/hash_bytes.cc
- * - http://www.cse.yorku.ca/~oz/hash.html
+ * -https://github.com/gcc-mirror/gcc/blob/master/libstdc++-v3/libsupc++/hash_bytes.cc
+ * -http://www.cse.yorku.ca/~oz/hash.html
  */
 static inline size_t unaligned_load(const char* p) {
     size_t result;
@@ -122,7 +121,7 @@ typedef struct HashContextVTable {
     size_t (*hash_bytes)(HashContext*, void const* ptr, size_t size);
 
     /*
-     * Compare `size` bytes at p1 and p2 for equality. Input param `size` is
+     * Compare `size` bytes at `p1` and `p2` for equality. Input param `size` is
      * `sizeof(*p1)`.
      */
     bool (*are_equal)(
@@ -130,7 +129,7 @@ typedef struct HashContextVTable {
     );
 } HashContextVTable;
 
-/* Base structure for all hash context types. */
+/* Base structure for all hash context types */
 struct HashContext {
     HashContextVTable const* vtable;
 };
@@ -138,8 +137,7 @@ struct HashContext {
 static HashContextVTable hash_ctx_vtable = {0};
 
 /*
- * Default hash context. Useful for completely defined types (e.g., numeric
- * types).
+ * Default hash context. Useful for numeric types.
  *
  * Use `default_hash_ctx_new` to create a new context of this type
  */

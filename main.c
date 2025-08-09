@@ -24,6 +24,14 @@ struct Node {
 #define V s32
 #include "cars/hashmap.h"
 
+s32 cmp(void const* p1, void const* p2) {
+    Node* n1 = (Node*)p1;
+    Node* n2 = (Node*)p2;
+    if (n1->x < n2->x) return -1;
+    if (n1->x > n2->x) return 1;
+    return 0;
+}
+
 int main(int argc, char* argv[argc + 1]) {
     ArenaAllocator a = arena_allocator_new(1e12);
 
@@ -108,6 +116,8 @@ int main(int argc, char* argv[argc + 1]) {
     for (size_t i = 0; i < V_LEN + V2_LEN; i++) {
         printf("El: %d\n", v.data[i].x);
     }
+
+    Node_vec_sort(&v, cmp);
 
     Node_vec_drop(&v);
     Node_vec_drop(&v2);

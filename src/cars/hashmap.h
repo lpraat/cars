@@ -59,10 +59,13 @@ static void HASHMAP_METHOD(initialize)(
     hashmap->slots = hashmap->allocator->vtable->alloc(
         hashmap->allocator, n_slots * sizeof(HASHMAP_SLOT(K, V))
     );
-    memset(hashmap->slots, 0, n_slots * sizeof(HASHMAP_SLOT(K, V)));
+
     if (!hashmap->slots) {
         MEMERR();
     }
+
+    // Zero memory so that slot.state == HashMapSlotState_Empty
+    memset(hashmap->slots, 0, n_slots * sizeof(HASHMAP_SLOT(K, V)));
     hashmap->n_slots = n_slots;
 }
 
@@ -145,10 +148,12 @@ void HASHMAP_METHOD(insert)(HASHMAP_NAME(K, V)* hashmap, K key, V value) {
         HASHMAP_SLOT(K, V)* new_slots = hashmap->allocator->vtable->alloc(
             hashmap->allocator, new_n_slots * sizeof(HASHMAP_SLOT(K, V))
         );
-        memset(new_slots, 0, new_n_slots * sizeof(HASHMAP_SLOT(K, V)));
         if (!new_slots) {
             MEMERR();
         }
+
+        // Zero memory so that slot.state == HashMapSlotState_Empty
+        memset(new_slots, 0, new_n_slots * sizeof(HASHMAP_SLOT(K, V)));
 
         size_t n_full = 0;
         for (size_t i = 0; i < hashmap->n_slots; i++) {

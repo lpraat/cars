@@ -101,6 +101,7 @@ void arena_allocator_reset(ArenaAllocator* self) {
 
 void arena_allocator_drop(ArenaAllocator* self) { free(self->base_ptr); }
 
+/* Inner arena (within the parent arena) for temporary allocations */
 typedef struct InnerArena {
     ArenaAllocator* arena;
     size_t ckpt_offset;

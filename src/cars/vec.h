@@ -1,6 +1,8 @@
 #ifndef CARS_VEC_H
 #define CARS_VEC_H
 
+/* Dynamic array implementation */
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -28,8 +30,6 @@ typedef struct VEC_NAME(T) {
     size_t len;
 } VEC_NAME(T);
 #endif
-
-/* TODO: sort method */
 
 #ifndef NO_VEC_IMPL
 void* VEC_METHOD(reserve)(VEC_NAME(T)* vec, size_t additional_capacity) {
@@ -86,6 +86,12 @@ VEC_NAME(T) VEC_METHOD(new_with_capacity)(Allocator* a, size_t capacity) {
     VEC_NAME(T) vec = {.allocator = a};
     VEC_METHOD(reserve)(&vec, capacity);
     return vec;
+}
+
+void VEC_METHOD(sort)(
+    VEC_NAME(T)* vec, s32 (*cmp)(void const* p1, void const* p2)
+) {
+    qsort(vec->data, vec->len, sizeof(T), cmp);
 }
 
 #endif

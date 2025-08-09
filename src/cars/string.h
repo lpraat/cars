@@ -1,6 +1,8 @@
 #ifndef CARS_STRING_H
 #define CARS_STRING_H
 
+/* Non null-terminated String implementation */
+
 #include <stdio.h>
 #include <string.h>
 
