@@ -96,7 +96,7 @@ void VEC_METHOD(sort)(
 
 #endif
 
-#undef VEC_NAME_T
+#undef T_VEC_NAME
 #undef NO_VEC_DECL
 #undef NO_VEC_IMPL
 #undef T
