@@ -7,8 +7,8 @@
 #include <string.h>
 
 #include "cars/allocator.h"
+#include "cars/base.h"
 #include "cars/hash.h"
-#include "cars/utils.h"
 
 #define INITIAL_N_SLOTS 16
 #define LOAD_FACTOR 0.75
@@ -28,8 +28,7 @@ typedef enum HashMapSlotState {
 #define HASHMAP_METHOD(name) CONCAT(CONCAT(KV_HASHMAP_NAME, _), name)
 #else
 #define HASHMAP_NAME(K, V) CONCAT(CONCAT(CONCAT(K, _), V), _HashMap)
-#define HASHMAP_METHOD(name) \
-    CONCAT(CONCAT(CONCAT(CONCAT(K, _), V), _hashmap_), name)
+#define HASHMAP_METHOD(name) CONCAT(CONCAT(CONCAT(CONCAT(K, _), V), _hashmap_), name)
 #endif
 #define HASHMAP_SLOT(K, V) CONCAT(HASHMAP_NAME(K, V), _Entry)
 
@@ -52,13 +51,10 @@ typedef struct HASHMAP_NAME(K, V) {
 
 #ifndef NO_HASHMAP_IMPL
 
-static void HASHMAP_METHOD(initialize)(
-    HASHMAP_NAME(K, V)* hashmap, size_t n_slots
-) {
+static void HASHMAP_METHOD(initialize)(HASHMAP_NAME(K, V)* hashmap, size_t n_slots) {
     assert(hashmap->n_full == 0 && hashmap->n_slots == 0);
-    hashmap->slots = hashmap->allocator->vtable->alloc(
-        hashmap->allocator, n_slots * sizeof(HASHMAP_SLOT(K, V))
-    );
+    hashmap->slots =
+        hashmap->allocator->vtable->alloc(hashmap->allocator, n_slots * sizeof(HASHMAP_SLOT(K, V)));
 
     if (!hashmap->slots) {
         MEMERR();
@@ -69,38 +65,27 @@ static void HASHMAP_METHOD(initialize)(
     hashmap->n_slots = n_slots;
 }
 
-HASHMAP_NAME(K, V) HASHMAP_METHOD(new)(
-    Allocator* allocator, HashContext* hash_ctx
-) {
-    return (HASHMAP_NAME(K, V)){.allocator = allocator,
-                                .slots = 0,
-                                .hash_ctx = hash_ctx,
-                                .n_slots = 0,
-                                .n_full = 0};
+HASHMAP_NAME(K, V) HASHMAP_METHOD(new)(Allocator* allocator, HashContext* hash_ctx) {
+    return (HASHMAP_NAME(K, V)){
+        .allocator = allocator, .slots = 0, .hash_ctx = hash_ctx, .n_slots = 0, .n_full = 0
+    };
 }
 
 HASHMAP_NAME(K, V) HASHMAP_METHOD(new_with_n_slots)(
     Allocator* allocator, HashContext* hash_ctx, size_t n_slots
 ) {
     HASHMAP_NAME(K, V) map = {
-        .allocator = allocator,
-        .slots = 0,
-        .hash_ctx = hash_ctx,
-        .n_slots = 0,
-        .n_full = 0
+        .allocator = allocator, .slots = 0, .hash_ctx = hash_ctx, .n_slots = 0, .n_full = 0
     };
     HASHMAP_METHOD(initialize)(&map, n_slots);
     return map;
 }
 
 V* HASHMAP_METHOD(get)(HASHMAP_NAME(K, V)* hashmap, K* key) {
-    size_t hash = hashmap->hash_ctx->vtable->hash_bytes(
-        hashmap->hash_ctx, key, sizeof(*key)
-    );
+    size_t hash = hashmap->hash_ctx->vtable->hash_bytes(hashmap->hash_ctx, key, sizeof(*key));
     size_t start_probe = hash % hashmap->n_slots;
     for (size_t i = 0; i < hashmap->n_slots; i++) {
-        HASHMAP_SLOT(K, V)* slot =
-            &hashmap->slots[(start_probe + i) % hashmap->n_slots];
+        HASHMAP_SLOT(K, V)* slot = &hashmap->slots[(start_probe + i) % hashmap->n_slots];
         if (slot->state == HashMapSlotState_Empty) {
             return 0;
         }
@@ -119,13 +104,10 @@ bool HASHMAP_METHOD(contains_key)(HASHMAP_NAME(K, V)* hashmap, K* key) {
 }
 
 void HASHMAP_METHOD(remove)(HASHMAP_NAME(K, V)* hashmap, K* key) {
-    size_t hash = hashmap->hash_ctx->vtable->hash_bytes(
-        hashmap->hash_ctx, key, sizeof(*key)
-    );
+    size_t hash = hashmap->hash_ctx->vtable->hash_bytes(hashmap->hash_ctx, key, sizeof(*key));
     size_t start_probe = hash % hashmap->n_slots;
     for (size_t i = 0; i < hashmap->n_slots; i++) {
-        HASHMAP_SLOT(K, V)* slot =
-            &hashmap->slots[(start_probe + i) % hashmap->n_slots];
+        HASHMAP_SLOT(K, V)* slot = &hashmap->slots[(start_probe + i) % hashmap->n_slots];
         if (slot->state == HashMapSlotState_Full &&
             hashmap->hash_ctx->vtable->are_equal(
                 hashmap->hash_ctx, &slot->key, key, sizeof(*key)
@@ -181,9 +163,7 @@ void HASHMAP_METHOD(insert)(HASHMAP_NAME(K, V)* hashmap, K key, V value) {
     }
 
     // Insert new element
-    size_t hash = hashmap->hash_ctx->vtable->hash_bytes(
-        hashmap->hash_ctx, &key, sizeof(key)
-    );
+    size_t hash = hashmap->hash_ctx->vtable->hash_bytes(hashmap->hash_ctx, &key, sizeof(key));
     size_t start_probe = hash % hashmap->n_slots;
     bool using_deleted_slot = false;
     size_t insert_slot;
@@ -210,9 +190,8 @@ void HASHMAP_METHOD(insert)(HASHMAP_NAME(K, V)* hashmap, K key, V value) {
         }
     }
 
-    hashmap->slots[insert_slot] = (HASHMAP_SLOT(K, V)){
-        .key = key, .value = value, .state = HashMapSlotState_Full
-    };
+    hashmap->slots[insert_slot] =
+        (HASHMAP_SLOT(K, V)){.key = key, .value = value, .state = HashMapSlotState_Full};
     hashmap->n_full += 1;
 }
 

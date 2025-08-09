@@ -7,8 +7,7 @@
 #include <string.h>
 
 #include "cars/allocator.h"
-#include "cars/types.h"
-#include "cars/utils.h"
+#include "cars/base.h"
 
 #define CONCAT_(a, b) a##b
 #define CONCAT(a, b) CONCAT_(a, b)
@@ -34,14 +33,29 @@ typedef struct VEC_NAME(T) {
 #ifndef NO_VEC_IMPL
 void* VEC_METHOD(reserve)(VEC_NAME(T)* vec, size_t additional_capacity) {
     vec->data = vec->allocator->vtable->realloc(
-        vec->allocator, vec->data,
-        (vec->capacity + additional_capacity) * sizeof(T)
+        vec->allocator, vec->data, (vec->capacity + additional_capacity) * sizeof(T)
     );
     if (!vec->data) {
         MEMERR();
     }
     vec->capacity += additional_capacity;
     return vec->data;
+}
+
+VEC_NAME(T) VEC_METHOD(new)(Allocator* a) {
+    VEC_NAME(T) t = {
+        .allocator = a,
+        .data = 0,
+        .capacity = 0,
+        .len = 0,
+    };
+    return t;
+}
+
+VEC_NAME(T) VEC_METHOD(new_with_capacity)(Allocator* a, size_t capacity) {
+    VEC_NAME(T) vec = {.allocator = a};
+    VEC_METHOD(reserve)(&vec, capacity);
+    return vec;
 }
 
 void VEC_METHOD(push)(VEC_NAME(T)* vec, T elem) {
@@ -63,34 +77,12 @@ void VEC_METHOD(extend)(VEC_NAME(T)* vec, VEC_NAME(T) const* other) {
     if (vec->capacity - vec->len < other->len) {
         VEC_METHOD(reserve)(vec, other->len - (vec->capacity - vec->len));
     }
-    memcpy(
-        vec->data + vec->len * sizeof(T), other->data, other->len * sizeof(T)
-    );
+    memcpy(vec->data + vec->len * sizeof(T), other->data, other->len * sizeof(T));
 }
 
-void VEC_METHOD(drop)(VEC_NAME(T)* vec) {
-    vec->allocator->vtable->free(vec->allocator, vec->data);
-}
+void VEC_METHOD(drop)(VEC_NAME(T)* vec) { vec->allocator->vtable->free(vec->allocator, vec->data); }
 
-VEC_NAME(T) VEC_METHOD(new)(Allocator* a) {
-    VEC_NAME(T) t = {
-        .allocator = a,
-        .data = 0,
-        .capacity = 0,
-        .len = 0,
-    };
-    return t;
-}
-
-VEC_NAME(T) VEC_METHOD(new_with_capacity)(Allocator* a, size_t capacity) {
-    VEC_NAME(T) vec = {.allocator = a};
-    VEC_METHOD(reserve)(&vec, capacity);
-    return vec;
-}
-
-void VEC_METHOD(sort)(
-    VEC_NAME(T)* vec, s32 (*cmp)(void const* p1, void const* p2)
-) {
+void VEC_METHOD(sort)(VEC_NAME(T)* vec, s32 (*cmp)(void const* p1, void const* p2)) {
     qsort(vec->data, vec->len, sizeof(T), cmp);
 }
 

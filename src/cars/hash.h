@@ -4,9 +4,8 @@
 #include <_stdlib.h>
 #include <string.h>
 
+#include "cars/base.h"
 #include "cars/string.h"
-#include "cars/types.h"
-#include "cars/utils.h"
 
 /*
  * Hash function implementations taken from:
@@ -75,8 +74,7 @@ static inline size_t shift_mix(size_t v) { return v ^ (v >> 47); }
 
 // Implementation of Murmur hash for 64-bit size_t.
 size_t hash_bytes(const void* ptr, size_t len, size_t seed) {
-    static const size_t mul =
-        (((size_t)0xc6a4a793UL) << 32UL) + (size_t)0x5bd1e995UL;
+    static const size_t mul = (((size_t)0xc6a4a793UL) << 32UL) + (size_t)0x5bd1e995UL;
     const char* const buf = (const char*)(ptr);
 
     // Remove the bytes not divisible by the sizeof(size_t).  This
@@ -124,9 +122,7 @@ typedef struct HashContextVTable {
      * Compare `size` bytes at `p1` and `p2` for equality. Input param `size` is
      * `sizeof(*p1)`.
      */
-    bool (*are_equal)(
-        HashContext*, void const* p1, void const* p2, size_t size
-    );
+    bool (*are_equal)(HashContext*, void const* p1, void const* p2, size_t size);
 } HashContextVTable;
 
 /* Base structure for all hash context types */
@@ -146,9 +142,7 @@ typedef struct DefaultHashContext {
     size_t seed;
 } DefaultHashContext;
 
-static size_t default_hash_ctx_hash_bytes(
-    HashContext* self, void const* ptr, size_t len
-) {
+static size_t default_hash_ctx_hash_bytes(HashContext* self, void const* ptr, size_t len) {
     DefaultHashContext* default_ctx = (DefaultHashContext*)self;
     return hash_bytes(ptr, len, default_ctx->seed);
 }
@@ -161,13 +155,11 @@ static bool default_hash_ctx_are_equal(
 }
 
 static HashContextVTable default_hash_ctx_vtable = {
-    .hash_bytes = default_hash_ctx_hash_bytes,
-    .are_equal = default_hash_ctx_are_equal
+    .hash_bytes = default_hash_ctx_hash_bytes, .are_equal = default_hash_ctx_are_equal
 };
 
 DefaultHashContext default_hash_ctx_new() {
-    return (DefaultHashContext){.base = {.vtable = &default_hash_ctx_vtable},
-                                .seed = arc4random()};
+    return (DefaultHashContext){.base = {.vtable = &default_hash_ctx_vtable}, .seed = arc4random()};
 }
 
 /*
@@ -180,9 +172,7 @@ typedef struct StringHashContext {
     size_t seed;
 } StringHashContext;
 
-static size_t string_hash_ctx_hash_bytes(
-    HashContext* self, void const* ptr, size_t len
-) {
+static size_t string_hash_ctx_hash_bytes(HashContext* self, void const* ptr, size_t len) {
     UNUSED(len);
     StringHashContext* string_ctx = (StringHashContext*)self;
     String* s = (String*)ptr;
@@ -198,13 +188,11 @@ static bool string_hash_ctx_are_equal(
 }
 
 static HashContextVTable string_hash_ctx_vtable = {
-    .hash_bytes = string_hash_ctx_hash_bytes,
-    .are_equal = string_hash_ctx_are_equal
+    .hash_bytes = string_hash_ctx_hash_bytes, .are_equal = string_hash_ctx_are_equal
 };
 
 StringHashContext string_hash_ctx_new() {
-    return (StringHashContext){.base = {.vtable = &string_hash_ctx_vtable},
-                               .seed = arc4random()};
+    return (StringHashContext){.base = {.vtable = &string_hash_ctx_vtable}, .seed = arc4random()};
 }
 
 #endif

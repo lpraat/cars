@@ -8,7 +8,7 @@
 #include <sys/errno.h>
 
 #include "cars/allocator.h"
-#include "cars/utils.h"
+#include "cars/base.h"
 
 typedef struct ArenaAllocator {
     Allocator base;

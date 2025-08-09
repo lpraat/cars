@@ -7,8 +7,7 @@
 #include <string.h>
 
 #include "cars/allocator.h"
-#include "cars/types.h"
-#include "cars/utils.h"
+#include "cars/base.h"
 
 typedef struct String {
     Allocator* allocator;
@@ -17,9 +16,7 @@ typedef struct String {
     size_t len;
 } String;
 
-String string_new(Allocator* allocator) {
-    return (String){.allocator = allocator};
-}
+String string_new(Allocator* allocator) { return (String){.allocator = allocator}; }
 
 void* string_reserve(String* s, size_t additional_capacity) {
     s->bytes = s->allocator->vtable->realloc(
@@ -111,9 +108,7 @@ String string_ascii_uppercase(Allocator* allocator, String const* s) {
     return s_uppercase;
 }
 
-void string_drop(String* s) {
-    s->allocator->vtable->free(s->allocator, s->bytes);
-}
+void string_drop(String* s) { s->allocator->vtable->free(s->allocator, s->bytes); }
 
 void string_print(String const* s) {
     fwrite(s->bytes, sizeof(u8), s->len, stdout);
